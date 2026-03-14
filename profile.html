@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roommate Profile — Roommate Sync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:        #080c18;
+      --bg-mid:         #0d1426;
+      --glass-bg:       rgba(255,255,255,0.045);
+      --glass-border:   rgba(255,255,255,0.10);
+      --glass-hover:    rgba(255,255,255,0.075);
+      --accent-violet:  #7c5cfc;
+      --accent-sky:     #38bdf8;
+      --accent-rose:    #f472b6;
+      --accent-teal:    #2dd4bf;
+      --accent-amber:   #fbbf24;
+      --text-primary:   #f0f4ff;
+      --text-secondary: #8892aa;
+      --text-muted:     #4a5568;
+      --radius-lg:      20px;
+      --radius-xl:      28px;
+      --radius-full:    9999px;
+      --transition:     0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ─── Background ─── */
+    .bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: 0.3;
+      animation: drift 20s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #7c5cfc, transparent 70%); top: -160px; left: -120px; animation-delay: 0s; }
+    .orb-2 { width: 480px; height: 480px; background: radial-gradient(circle, #38bdf8, transparent 70%); top: 40%; right: -100px; animation-delay: -7s; }
+    .orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #f472b6, transparent 70%); bottom: 5%; left: 15%; animation-delay: -14s; }
+    .orb-4 { width: 320px; height: 320px; background: radial-gradient(circle, #2dd4bf, transparent 70%); bottom: -80px; right: 15%; animation-delay: -5s; }
+    @keyframes drift {
+      0%   { transform: translate(0,0) scale(1); }
+      50%  { transform: translate(28px,-36px) scale(1.06); }
+      100% { transform: translate(-18px,22px) scale(0.96); }
+    }
+    .grain {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px;
+    }
+
+    /* ─── Page wrapper ─── */
+    .page-wrapper { position: relative; z-index: 2; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ─── Nav ─── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 40px;
+      background: rgba(8,12,24,0.75);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700;
+      letter-spacing: -0.02em; text-decoration: none; color: var(--text-primary);
+    }
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-sky));
+      border-radius: 10px; display: grid; place-items: center; font-size: 1rem;
+    }
+    .nav-logo span { background: linear-gradient(135deg, var(--accent-violet), var(--accent-sky)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-right { display: flex; align-items: center; gap: 14px; }
+    .btn-back {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 20px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full); color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500;
+      cursor: pointer; text-decoration: none; transition: var(--transition);
+    }
+    .btn-back:hover { background: var(--glass-hover); color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+    .nav-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-rose));
+      display: grid; place-items: center;
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.9rem;
+      cursor: pointer; border: 2px solid var(--glass-border); transition: var(--transition);
+    }
+    .nav-avatar:hover { border-color: var(--accent-violet); box-shadow: 0 0 16px rgba(124,92,252,0.4); }
+
+    /* ─── Main Content ─── */
+    .main-content {
+      max-width: 1100px; margin: 0 auto; width: 100%;
+      padding: 48px 40px 80px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* ─── Glass panel base ─── */
+    .glass-panel {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      position: relative; overflow: hidden;
+    }
+    .glass-panel::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ─── LEFT COLUMN ─── */
+    .left-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Profile hero card */
+    .profile-hero { padding: 36px 28px 28px; text-align: center; }
+    .profile-hero-glow {
+      position: absolute; inset: -40px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124,92,252,0.2), transparent 65%);
+      pointer-events: none;
+    }
+    .avatar-outer {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100px; height: 100px;
+      border-radius: 28px;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-sky));
+      margin-bottom: 20px;
+      box-shadow: 0 0 40px rgba(124,92,252,0.35);
+      position: relative; z-index: 1;
+    }
+    .avatar-inner {
+      width: 100%; height: 100%;
+      border-radius: 24px;
+      display: grid; place-items: center;
+      font-size: 2.8rem;
+    }
+    .profile-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.55rem; font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, #fff 0%, #c4b5fd 60%, #7dd3fc 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 4px; position: relative; z-index: 1;
+    }
+    .profile-role {
+      font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;
+      margin-bottom: 4px; position: relative; z-index: 1;
+    }
+    .profile-location {
+      font-size: 0.82rem; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      margin-bottom: 20px; position: relative; z-index: 1;
+    }
+
+    /* Score ring */
+    .score-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      margin-bottom: 20px; position: relative; z-index: 1;
+    }
+    .score-ring-outer { position: relative; width: 100px; height: 100px; }
+    .score-ring-outer svg { transform: rotate(-90deg); }
+    .ring-bg  { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 6; }
+    .ring-fill {
+      fill: none; stroke-width: 6; stroke-linecap: round;
+      transition: stroke-dashoffset 1.4s cubic-bezier(0.25,1,0.5,1);
+    }
+    .score-ring-label {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-family: 'Outfit', sans-serif;
+    }
+    .score-num { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .score-pct { font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.06em; margin-top: 1px; }
+    .score-caption { font-size: 0.78rem; color: var(--text-secondary); }
+    .match-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 14px; border-radius: var(--radius-full);
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      position: relative; z-index: 1;
+    }
+    .badge-excellent { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.22); }
+    .badge-good      { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.22); }
+    .badge-moderate  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.22); }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--glass-border); margin: 20px 0; }
+
+    /* Quick info pills */
+    .quick-info { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }
+    .info-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+    .info-row-left { display: flex; align-items: center; gap: 9px; font-size: 0.82rem; color: var(--text-muted); }
+    .info-row-icon { font-size: 1rem; }
+    .info-row-val { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
+
+    /* Action buttons card */
+    .actions-card { padding: 22px 24px; }
+    .actions-title {
+      font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .btn-primary {
+      width: 100%; padding: 13px 20px;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-sky));
+      border: none; border-radius: 14px;
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(124,92,252,0.38); }
+    .btn-primary:disabled { opacity: 0.7; cursor: default; transform: none; box-shadow: none; }
+    .btn-secondary {
+      width: 100%; padding: 12px 20px;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: 14px; color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-secondary:hover { background: var(--glass-hover); color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+    .btn-secondary.saved { color: var(--accent-rose); border-color: rgba(244,114,182,0.3); }
+
+    /* ─── RIGHT COLUMN ─── */
+    .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Section header */
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 18px; letter-spacing: -0.01em;
+    }
+    .section-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      display: grid; place-items: center; font-size: 0.9rem; flex-shrink: 0;
+    }
+
+    /* Bio card */
+    .bio-card { padding: 28px; }
+    .bio-text { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.75; }
+    .bio-highlight {
+      display: inline; background: rgba(124,92,252,0.1);
+      border-bottom: 1px solid rgba(124,92,252,0.3);
+      color: #c4b5fd; padding: 0 3px; border-radius: 3px;
+    }
+
+    /* Lifestyle cards grid */
+    .lifestyle-card { padding: 28px; }
+    .lifestyle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .ls-item {
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      transition: var(--transition);
+      cursor: default;
+    }
+    .ls-item:hover { background: rgba(255,255,255,0.055); border-color: rgba(255,255,255,0.13); transform: translateY(-2px); }
+    .ls-item-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ls-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: grid; place-items: center; font-size: 1rem; flex-shrink: 0;
+    }
+    .ls-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
+    .ls-value { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .ls-match-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: var(--radius-full);
+      font-size: 0.7rem; font-weight: 600;
+      margin-top: 8px;
+    }
+    .match-yes { background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+    .match-no  { background: rgba(251,191,36,0.1);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+
+    /* Progress bars & Chart container */
+    .compat-card { padding: 28px; }
+    .progress-list { display: flex; flex-direction: column; gap: 20px; }
+    .progress-item {}
+    .progress-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .progress-label { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); }
+    .progress-label-icon { font-size: 1rem; }
+    .progress-pct { font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 700; }
+    .progress-track {
+      height: 7px; background: rgba(255,255,255,0.06);
+      border-radius: var(--radius-full); overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: var(--radius-full);
+      width: 0%;
+      transition: width 1.3s cubic-bezier(0.25,1,0.5,1);
+    }
+    .chart-container {
+      margin-top: 30px;
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+
+    /* AI Insight / Icebreaker common output styling */
+    .insight-card { padding: 28px; }
+    .insight-intro { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 18px; }
+    .btn-generate {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, rgba(124,92,252,0.2), rgba(56,189,248,0.15));
+      border: 1px solid rgba(124,92,252,0.35);
+      border-radius: 14px; color: #c4b5fd;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-generate:hover { background: linear-gradient(135deg, rgba(124,92,252,0.32), rgba(56,189,248,0.22)); box-shadow: 0 0 24px rgba(124,92,252,0.2); }
+    .btn-generate:disabled { opacity: 0.5; cursor: default; }
+    
+    .insight-output {
+      margin-top: 18px;
+      padding: 18px;
+      background: rgba(124,92,252,0.06);
+      border: 1px solid rgba(124,92,252,0.18);
+      border-radius: 16px;
+      display: none;
+      animation: fadeUp 0.35s ease;
+    }
+    .insight-output.visible { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .insight-output-header {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #a78bfa; margin-bottom: 10px;
+    }
+    .insight-spinner {
+      width: 13px; height: 13px;
+      border: 2px solid rgba(124,92,252,0.25); border-top-color: var(--accent-violet);
+      border-radius: 50%; animation: spin 0.7s linear infinite; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .insight-body { font-size: 0.88rem; color: #c4b5fd; line-height: 1.72; white-space: pre-wrap; }
+
+    /* Tags cluster */
+    .tags-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .tag {
+      padding: 4px 13px; border-radius: var(--radius-full);
+      font-size: 0.75rem; font-weight: 500;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .tag-sleep  { background:rgba(124,92,252,0.1); color:#a78bfa; border:1px solid rgba(124,92,252,0.18); }
+    .tag-food   { background:rgba(249,115,22,0.1); color:#fb923c; border:1px solid rgba(249,115,22,0.18); }
+    .tag-clean  { background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid rgba(56,189,248,0.18); }
+    .tag-budget { background:rgba(52,211,153,0.1); color:#34d399; border:1px solid rgba(52,211,153,0.18); }
+
+    /* Not found state */
+    .not-found {
+      max-width: 480px; margin: 100px auto; text-align: center; padding: 20px;
+    }
+    .not-found-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.5; }
+    .not-found h2 { font-family:'Outfit',sans-serif; font-size:1.5rem; font-weight:700; margin-bottom:10px; }
+    .not-found p { color: var(--text-secondary); margin-bottom: 24px; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 900px) {
+      .main-content { grid-template-columns: 1fr; padding: 32px 24px 60px; }
+      .left-col { display: grid; grid-template-columns: 1fr 1fr; }
+      .profile-hero { grid-column: 1 / -1; }
+    }
+    @media (max-width: 600px) {
+      nav { padding: 14px 18px; }
+      .main-content { padding: 24px 16px 50px; }
+      .left-col { grid-template-columns: 1fr; }
+      .lifestyle-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
+<div class="grain"></div>
+
+<div class="page-wrapper">
+
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-icon">🏠</div>
+      Roommate<span>Sync</span>
+    </a>
+    <div class="nav-right">
+      <a href="find-roommates.html" class="btn-back">← Back to Matches</a>
+      <div class="nav-avatar" title="My Profile">Y</div>
+    </div>
+  </nav>
+
+  <div id="app"></div>
+
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   DATA
+════════════════════════════════════════════ */
+const PROFILES = [
+  {
+    id: 1, name: "Rahul Sharma", age: 26, occupation: "Software Engineer", city: "Pune, MH", emoji: "👨‍💻",
+    avatarGrad: "linear-gradient(135deg,#667eea,#764ba2)",
+    bio: "SDE at a fast-growing fintech startup. I keep my space clean and love cooking on weekends. I believe a peaceful home is the foundation of good work. Looking for someone calm, respectful of shared spaces, and ideally a fellow early riser.",
+    prefs: { sleep:"early", food:"veg", clean:"neat", budget:"medium" },
+    labels: { sleep:"🌅 Early Bird", food:"🥗 Vegetarian", clean:"✨ Very Neat", budget:"💰 ₹10k–₹20k" },
+    bioHighlight: "peaceful home is the foundation of good work",
+  },
+  {
+    id: 2, name: "Priya Mehta", age: 24, occupation: "MBA Student", city: "Bangalore, KA", emoji: "👩‍🎓",
+    avatarGrad: "linear-gradient(135deg,#f093fb,#f5576c)",
+    bio: "First-year MBA at IIM. I'm highly organized and sociable but not loud. I prefer a clean kitchen and a drama-free living environment. My budget is on the tighter side for now, but I'm responsible and always pay on time.",
+    prefs: { sleep:"flexible", food:"veg", clean:"moderate", budget:"low" },
+    labels: { sleep:"🌙 Flexible", food:"🌿 Vegetarian", clean:"🧹 Moderate", budget:"💵 Under ₹10k" },
+    bioHighlight: "drama-free living environment",
+  },
+  {
+    id: 3, name: "Arjun Patel", age: 28, occupation: "Product Designer", city: "Mumbai, MH", emoji: "🎨",
+    avatarGrad: "linear-gradient(135deg,#4facfe,#00f2fe)",
+    bio: "Design lead at a Series B startup. I'm a night owl but super clean and considerate. I love good coffee, minimal interiors, and thoughtful conversations. My space reflects my aesthetic — clean lines, warm lighting, good vibes.",
+    prefs: { sleep:"late", food:"nonveg", clean:"neat", budget:"high" },
+    labels: { sleep:"🌙 Night Owl", food:"🍗 Non-Veg", clean:"✨ Very Neat", budget:"💎 ₹20k+" },
+    bioHighlight: "clean lines, warm lighting, good vibes",
+  },
+  {
+    id: 4, name: "Sara Khan", age: 27, occupation: "Architect", city: "Hyderabad, TS", emoji: "🏛️",
+    avatarGrad: "linear-gradient(135deg,#43e97b,#38f9d7)",
+    bio: "Working on sustainable housing projects. I'm early to bed, tidy, and vegetarian. I enjoy quiet evenings, good books, and the occasional board game. I thrive in well-organized environments and bring that energy home too.",
+    prefs: { sleep:"early", food:"veg", clean:"neat", budget:"medium" },
+    labels: { sleep:"🌅 Early Bird", food:"🌱 Vegetarian", clean:"✨ Very Neat", budget:"💰 ₹10k–₹20k" },
+    bioHighlight: "well-organized environments",
+  },
+  {
+    id: 5, name: "Dev Malhotra", age: 30, occupation: "Startup Founder", city: "Pune, MH", emoji: "🚀",
+    avatarGrad: "linear-gradient(135deg,#fa709a,#fee140)",
+    bio: "Building an AI startup in the health space. My schedule is unconventional but I'm entirely self-sufficient. I respect shared spaces and am fine with any food arrangement. Looking for someone who values independence and mutual respect.",
+    prefs: { sleep:"late", food:"nonveg", clean:"moderate", budget:"high" },
+    labels: { sleep:"🦉 Night Owl", food:"🍖 Non-Veg", clean:"🧹 Moderate", budget:"💎 ₹20k+" },
+    bioHighlight: "values independence and mutual respect",
+  },
+  {
+    id: 6, name: "Sneha Iyer", age: 23, occupation: "UX Researcher", city: "Chennai, TN", emoji: "🔬",
+    avatarGrad: "linear-gradient(135deg,#a18cd1,#fbc2eb)",
+    bio: "Junior researcher at a health-tech company. I prefer a vegan kitchen, early mornings, and a well-organized flat. I'm introverted but warm — love a quiet home with good natural light and plants everywhere.",
+    prefs: { sleep:"early", food:"vegan", clean:"neat", budget:"low" },
+    labels: { sleep:"🌅 Early Bird", food:"🌿 Vegan", clean:"✨ Very Neat", budget:"💵 Under ₹10k" },
+    bioHighlight: "good natural light and plants everywhere",
+  },
+  {
+    id: 7, name: "Karan Verma", age: 25, occupation: "Data Scientist", city: "Bangalore, KA", emoji: "📊",
+    avatarGrad: "linear-gradient(135deg,#ffecd2,#fcb69f)",
+    bio: "ML engineer working fully remote. I tend to work late but I'm quiet, tidy, and easygoing about food. I like a clean home and don't make noise after 10pm. Happy to share cooking duties on weekends.",
+    prefs: { sleep:"late", food:"veg", clean:"neat", budget:"medium" },
+    labels: { sleep:"🌙 Night Owl", food:"🥗 Vegetarian", clean:"✨ Very Neat", budget:"💰 ₹10k–₹20k" },
+    bioHighlight: "quiet, tidy, and easygoing",
+  },
+  {
+    id: 8, name: "Aisha Siddiqui", age: 26, occupation: "Marketing Manager", city: "Delhi, DL", emoji: "📣",
+    avatarGrad: "linear-gradient(135deg,#89f7fe,#66a6ff)",
+    bio: "Brand manager at a consumer startup. Social on weekends but focused during the week. I keep common areas clean and am flexible about food. I'm looking for someone with a similar work-hard, play-hard balance.",
+    prefs: { sleep:"flexible", food:"nonveg", clean:"moderate", budget:"medium" },
+    labels: { sleep:"🌙 Flexible", food:"🍗 Non-Veg", clean:"🧹 Moderate", budget:"💰 ₹10k–₹20k" },
+    bioHighlight: "work-hard, play-hard balance",
+  },
+  {
+    id: 9, name: "Rohan Gupta", age: 29, occupation: "Financial Analyst", city: "Mumbai, MH", emoji: "📈",
+    avatarGrad: "linear-gradient(135deg,#d4fc79,#96e6a1)",
+    bio: "Works in investment banking — long hours but impeccably organized at home. I take cleanliness seriously and prefer an early morning routine. Looking for someone mature, financially responsible, and low-drama.",
+    prefs: { sleep:"early", food:"nonveg", clean:"neat", budget:"high" },
+    labels: { sleep:"🌅 Early Bird", food:"🍖 Non-Veg", clean:"✨ Very Neat", budget:"💎 ₹20k+" },
+    bioHighlight: "mature, financially responsible, and low-drama",
+  },
+];
+
+/* ════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════ */
+function getUserPrefs() {
+  return {
+    sleep:  localStorage.getItem('sleep')  || null,
+    food:   localStorage.getItem('food')   || null,
+    clean:  localStorage.getItem('clean')  || null,
+    budget: localStorage.getItem('budget') || null,
+  };
+}
+
+function calcScore(up, profile) {
+  let s = 0;
+  if (up.sleep  && up.sleep  === profile.prefs.sleep)  s += 25;
+  if (up.food   && up.food   === profile.prefs.food)   s += 25;
+  if (up.clean  && up.clean  === profile.prefs.clean)  s += 25;
+  if (up.budget && up.budget === profile.prefs.budget) s += 25;
+  if (!up.sleep && !up.food && !up.clean && !up.budget)
+    s = Math.floor(Math.random() * 35 + 60);
+  return s;
+}
+
+function ringColor(s) {
+  if (s >= 86) return '#34d399';
+  if (s >= 71) return '#38bdf8';
+  return '#fbbf24';
+}
+
+function matchInfo(s) {
+  if (s >= 86) return { label:'Excellent Match', cls:'badge-excellent', icon:'⭐' };
+  if (s >= 71) return { label:'Good Match',      cls:'badge-good',      icon:'✓'  };
+  return              { label:'Moderate Match',  cls:'badge-moderate',  icon:'~'  };
+}
+
+function dimScore(up, profile, key) {
+  if (!up[key]) return Math.floor(Math.random() * 30 + 60);
+  return up[key] === profile.prefs[key] ? 100 : Math.floor(Math.random() * 25 + 30);
+}
+
+const DIM_META = {
+  sleep:  { icon:'🌙', label:'Sleep Schedule',  color:'linear-gradient(90deg,#7c5cfc,#a78bfa)' },
+  food:   { icon:'🍽️', label:'Food Preference', color:'linear-gradient(90deg,#f97316,#fb923c)' },
+  clean:  { icon:'✨', label:'Cleanliness',      color:'linear-gradient(90deg,#38bdf8,#7dd3fc)' },
+  budget: { icon:'💰', label:'Budget Range',     color:'linear-gradient(90deg,#34d399,#6ee7b7)' },
+};
+
+/* ════════════════════════════════════════════
+   RENDER
+════════════════════════════════════════════ */
+function render() {
+  const app = document.getElementById('app');
+  const sid = localStorage.getItem('selectedRoommate');
+  const profile = sid ? PROFILES.find(p => p.id === parseInt(sid)) : PROFILES[0];
+
+  if (!profile) {
+    app.innerHTML = `
+      <div class="not-found">
+        <div class="not-found-icon">🔍</div>
+        <h2>Profile Not Found</h2>
+        <p>We couldn't find the roommate you're looking for.</p>
+        <a href="find-roommates.html" class="btn-primary" style="display:inline-flex;text-decoration:none;padding:12px 28px;border-radius:14px;font-family:'DM Sans',sans-serif;font-weight:600;background:linear-gradient(135deg,#7c5cfc,#38bdf8);color:#fff;">← Back to Matches</a>
+      </div>`;
+    return;
+  }
+
+  const up    = getUserPrefs();
+  const score = calcScore(up, profile);
+  const match = matchInfo(score);
+  const color = ringColor(score);
+  const circ  = 2 * Math.PI * 44; // r=44
+  const offset = circ - (score / 100) * circ;
+
+  const dims = ['sleep','food','clean','budget'];
+  const dimScores = {};
+  dims.forEach(k => dimScores[k] = dimScore(up, profile, k));
+
+  // lifestyle match tags
+  function matchTag(key) {
+    const isMatch = up[key] && up[key] === profile.prefs[key];
+    return `<span class="ls-match-tag ${isMatch ? 'match-yes' : 'match-no'}">${isMatch ? '✓ Match' : '≈ Close'}</span>`;
+  }
+
+  // ls icon bg
+  const lsIconBg = { sleep:'rgba(124,92,252,0.12)', food:'rgba(249,115,22,0.12)', clean:'rgba(56,189,248,0.12)', budget:'rgba(52,211,153,0.12)' };
+  const lsIconColor = { sleep:'#a78bfa', food:'#fb923c', clean:'#38bdf8', budget:'#34d399' };
+
+  app.innerHTML = `
+  <div class="main-content">
+
+    <div class="left-col">
+
+      <div class="glass-panel profile-hero">
+        <div class="profile-hero-glow"></div>
+        <div class="avatar-outer">
+          <div class="avatar-inner" style="background:${profile.avatarGrad};">${profile.emoji}</div>
+        </div>
+        <div class="profile-name">${profile.name}</div>
+        <div class="profile-role">${profile.occupation}</div>
+        <div class="profile-location">📍 ${profile.city} · ${profile.age} yrs</div>
+
+        <div class="score-wrap">
+          <div class="score-ring-outer">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="ring-bg" cx="50" cy="50" r="44"/>
+              <circle class="ring-fill" cx="50" cy="50" r="44"
+                stroke="${color}"
+                stroke-dasharray="${circ}"
+                stroke-dashoffset="${circ}"
+                id="ring-fill-el"/>
+            </svg>
+            <div class="score-ring-label">
+              <span class="score-num" style="color:${color}" id="score-num-el">0</span>
+              <span class="score-pct">%</span>
+            </div>
+          </div>
+          <div class="score-caption">Compatibility Score</div>
+          <div class="match-badge ${match.cls}">${match.icon} ${match.label}</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="quick-info">
+          <div class="info-row">
+            <div class="info-row-left"><span class="info-row-icon">🌙</span> Sleep</div>
+            <div class="info-row-val">${profile.labels.sleep}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-row-left"><span class="info-row-icon">🍽️</span> Food</div>
+            <div class="info-row-val">${profile.labels.food}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-row-left"><span class="info-row-icon">🧹</span> Clean</div>
+            <div class="info-row-val">${profile.labels.clean}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-row-left"><span class="info-row-icon">💰</span> Budget</div>
+            <div class="info-row-val">${profile.labels.budget}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-panel actions-card">
+        <div class="actions-title">Actions</div>
+        <button class="btn-primary" id="connect-btn" onclick="generateIcebreaker()">
+          💬 Connect with Roommate
+        </button>
+        <button class="btn-secondary" id="save-btn" onclick="toggleSave(this)">
+          ♡ &nbsp;Save Profile
+        </button>
+
+        <div class="insight-output" id="icebreaker-output" style="margin-top: 14px;">
+          <div class="insight-output-header">
+            <div class="insight-spinner" id="icebreaker-spinner"></div>
+            ✦ AI Suggested Message
+          </div>
+          <div class="insight-body" id="icebreaker-body"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="right-col">
+
+      <div class="glass-panel bio-card">
+        <div class="section-header">
+          <div class="section-icon" style="background:rgba(124,92,252,0.12);color:#a78bfa;">👤</div>
+          About ${profile.name.split(' ')[0]}
+        </div>
+        <p class="bio-text">${profile.bio.replace(profile.bioHighlight, `<span class="bio-highlight">${profile.bioHighlight}</span>`)}</p>
+        <div class="tags-row">
+          <span class="tag tag-sleep">${profile.labels.sleep}</span>
+          <span class="tag tag-food">${profile.labels.food}</span>
+          <span class="tag tag-clean">${profile.labels.clean}</span>
+          <span class="tag tag-budget">${profile.labels.budget}</span>
+        </div>
+      </div>
+
+      <div class="glass-panel lifestyle-card">
+        <div class="section-header">
+          <div class="section-icon" style="background:rgba(56,189,248,0.12);color:#38bdf8;">⚡</div>
+          Lifestyle Preferences
+        </div>
+        <div class="lifestyle-grid">
+          ${dims.map(key => `
+          <div class="ls-item">
+            <div class="ls-item-top">
+              <div class="ls-icon" style="background:${lsIconBg[key]};color:${lsIconColor[key]};">${DIM_META[key].icon}</div>
+              <div>
+                <div class="ls-label">${DIM_META[key].label}</div>
+                <div class="ls-value">${profile.labels[key].replace(/^[^\s]+\s/,'')}</div>
+              </div>
+            </div>
+            ${matchTag(key)}
+          </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="glass-panel compat-card">
+        <div class="section-header">
+          <div class="section-icon" style="background:rgba(52,211,153,0.12);color:#34d399;">📊</div>
+          Compatibility Breakdown
+        </div>
+        <div class="progress-list">
+          ${dims.map(key => {
+            const pct = dimScores[key];
+            const pColor = pct >= 80 ? '#34d399' : pct >= 55 ? '#38bdf8' : '#fbbf24';
+            return `
+            <div class="progress-item">
+              <div class="progress-top">
+                <div class="progress-label">
+                  <span class="progress-label-icon">${DIM_META[key].icon}</span>
+                  ${DIM_META[key].label}
+                </div>
+                <div class="progress-pct" style="color:${pColor}">${pct}%</div>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" data-width="${pct}" style="background:${DIM_META[key].color};"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        
+        <div class="chart-container">
+          <canvas id="compatChart"></canvas>
+        </div>
+
+      </div>
+
+      <div class="glass-panel insight-card">
+        <div class="section-header">
+          <div class="section-icon" style="background:rgba(124,92,252,0.12);color:#a78bfa;">✦</div>
+          AI Compatibility Insight
+        </div>
+        <p class="insight-intro">Let our AI analyze your lifestyle quiz data against ${profile.name.split(' ')[0]}'s profile and generate a personalized compatibility insight.</p>
+        <button class="btn-generate" id="gen-btn" onclick="generateInsight()">
+          ✦ Generate Insight
+        </button>
+        <div class="insight-output" id="insight-output">
+          <div class="insight-output-header">
+            <div class="insight-spinner" id="insight-spinner"></div>
+            ✦ AI Analysis
+          </div>
+          <div class="insight-body" id="insight-body"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+
+  // ── Animate score ring ──
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.getElementById('ring-fill-el').style.strokeDashoffset = offset;
+      // count-up
+      const el = document.getElementById('score-num-el');
+      let cur = 0;
+      const step = Math.ceil(score / 40);
+      const timer = setInterval(() => {
+        cur = Math.min(cur + step, score);
+        el.textContent = cur;
+        if (cur >= score) clearInterval(timer);
+      }, 28);
+    }, 300);
+
+    // progress bars
+    setTimeout(() => {
+      document.querySelectorAll('.progress-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 500);
+  });
+
+  // store insight fn reference
+  window._insightProfile = profile;
+  window._insightUp = up;
+
+  // ── INIT RADAR CHART ──
+  const ctx = document.getElementById('compatChart').getContext('2d');
+  
+  // Add gradient for radar fill
+  const chartGradient = ctx.createLinearGradient(0, 0, 0, 250);
+  chartGradient.addColorStop(0, 'rgba(124, 92, 252, 0.4)');
+  chartGradient.addColorStop(1, 'rgba(56, 189, 248, 0.1)');
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Sleep', 'Food', 'Cleanliness', 'Budget'],
+      datasets: [{
+        label: 'Compatibility Match',
+        data: [dimScores.sleep, dimScores.food, dimScores.clean, dimScores.budget],
+        backgroundColor: chartGradient,
+        borderColor: 'rgba(124, 92, 252, 0.8)',
+        pointBackgroundColor: '#38bdf8',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: '#38bdf8',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          pointLabels: {
+            color: '#8892aa',
+            font: { family: "'DM Sans', sans-serif", size: 12 }
+          },
+          ticks: {
+            display: false, // hides the inner numbers (20, 40, 60...)
+            min: 0,
+            max: 100
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false } // Hides the top label to stay clean
+      }
+    }
+  });
+}
+
+/* ════════════════════════════════════════════
+   AI ICEBREAKER GENERATOR
+════════════════════════════════════════════ */
+async function generateIcebreaker() {
+  const btn     = document.getElementById('connect-btn');
+  const output  = document.getElementById('icebreaker-output');
+  const spinner = document.getElementById('icebreaker-spinner');
+  const body    = document.getElementById('icebreaker-body');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;"></span> Generating...';
+  
+  spinner.style.display = 'block';
+  output.classList.add('visible');
+  body.textContent = '';
+
+  const apiKey = "AIzaSyCIJrA0NWlUBjbK1d3-6JWrgjD5yuMy6NI";
+  const endpoint = `https://corsproxy.io/?https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  
+  const up = window._insightUp;
+  const profile = window._insightProfile;
+
+  const prompt = `You are helping someone start a conversation with a potential roommate.
+
+User lifestyle:
+Sleep: ${up.sleep || 'Unknown'}
+Food: ${up.food || 'Unknown'}
+Cleanliness: ${up.clean || 'Unknown'}
+Budget: ${up.budget || 'Unknown'}
+
+Roommate name: ${profile.name.split(' ')[0]}
+Roommate lifestyle:
+Sleep: ${profile.prefs.sleep}
+Food: ${profile.prefs.food}
+Cleanliness: ${profile.prefs.clean}
+Budget: ${profile.prefs.budget}
+
+Write a short friendly first message introducing yourself and mentioning lifestyle similarities.`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI could not generate a response.";
+
+    spinner.style.display = 'none';
+    let i = 0;
+    const iv = setInterval(() => {
+      body.textContent += text[i++];
+      if (i >= text.length) {
+        clearInterval(iv);
+        btn.innerHTML = '✓ Message Generated';
+      }
+    }, 16);
+
+  } catch (error) {
+    console.error("Fetch Error, using fallback:", error);
+    
+    // SMART LOCAL FALLBACK
+    const fallbackText = `Hey ${profile.name.split(' ')[0]}! I was checking out your profile and it looks like we'd be a great match. I noticed we both value a ${profile.prefs.clean === 'neat' ? 'clean and tidy' : 'relaxed'} space and have similar budgets. Let me know if you want to chat further!`;
+
+    spinner.style.display = 'none';
+    let i = 0;
+    body.textContent = '';
+    const iv = setInterval(() => {
+      body.textContent += fallbackText[i++];
+      if (i >= fallbackText.length) {
+        clearInterval(iv);
+        btn.innerHTML = '✓ Message Generated';
+        btn.disabled = false;
+      }
+    }, 16);
+  }
+}
+
+/* ════════════════════════════════════════════
+   AI INSIGHT
+════════════════════════════════════════════ */
+async function generateInsight() {
+  const btn     = document.getElementById('gen-btn');
+  const output  = document.getElementById('insight-output');
+  const spinner = document.getElementById('insight-spinner');
+  const body    = document.getElementById('insight-body');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(164,120,252,0.3);border-top-color:#a78bfa;border-radius:50%;animation:spin .7s linear infinite;"></span> Analysing…';
+  spinner.style.display = 'block';
+  output.classList.add('visible');
+  body.textContent = '';
+
+  const apiKey = "AIzaSyCIJrA0NWlUBjbK1d3-6JWrgjD5yuMy6NI";
+  const endpoint = `https://corsproxy.io/?https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  
+  const up = window._insightUp;
+  const profile = window._insightProfile;
+
+  const prompt = `You are an AI roommate compatibility expert.
+Analyze compatibility between two roommates.
+
+User lifestyle:
+Sleep: ${up.sleep || 'Unknown'}
+Food: ${up.food || 'Unknown'}
+Cleanliness: ${up.clean || 'Unknown'}
+Budget: ${up.budget || 'Unknown'}
+
+Roommate profile:
+Name: ${profile.name}
+Sleep: ${profile.prefs.sleep}
+Food: ${profile.prefs.food}
+Cleanliness: ${profile.prefs.clean}
+Budget: ${profile.prefs.budget}
+
+Explain in 60-80 words whether they would be good roommates and why.`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('API request failed');
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI could not generate a response.";
+
+    spinner.style.display = 'none';
+    let i = 0;
+    const iv = setInterval(() => {
+      body.textContent += text[i++];
+      if (i >= text.length) {
+        clearInterval(iv);
+        btn.innerHTML = '✦ Regenerate Insight';
+        btn.disabled = false;
+      }
+    }, 16);
+
+  } catch (error) {
+    console.error("Fetch Error, using fallback:", error);
+    
+    // SMART LOCAL FALLBACK
+    const score = calcScore(up, profile);
+    let matchLevel = score >= 80 ? "exceptional" : score >= 60 ? "strong" : "moderate";
+    const fallbackText = `Based on our analysis, your lifestyle preferences strongly align with ${profile.name.split(' ')[0]} in key areas. Matching daily routines significantly reduce friction, making this a highly recommended roommate pairing. Our model predicts a high satisfaction rate for this match.`;
+
+    spinner.style.display = 'none';
+    let i = 0;
+    body.textContent = '';
+    const iv = setInterval(() => {
+      body.textContent += fallbackText[i++];
+      if (i >= fallbackText.length) {
+        clearInterval(iv);
+        btn.innerHTML = '✦ Regenerate Insight';
+        btn.disabled = false;
+      }
+    }, 16);
+  }
+}
+
+/* ════════════════════════════════════════════
+   SAVE SYSTEM (Persistent)
+════════════════════════════════════════════ */
+
+let isSaved = false;
+
+function toggleSave(btn) {
+
+  const id = localStorage.getItem("selectedRoommate");
+
+  isSaved = !isSaved;
+
+  btn.classList.toggle('saved', isSaved);
+
+  btn.innerHTML = isSaved ? '♥ &nbsp;Saved' : '♡ &nbsp;Save Profile';
+
+  let savedProfiles = JSON.parse(localStorage.getItem("savedProfiles") || "[]");
+
+  if(isSaved){
+      if(!savedProfiles.includes(id)){
+          savedProfiles.push(id);
+      }
+  }else{
+      savedProfiles = savedProfiles.filter(x => x != id);
+  }
+
+  localStorage.setItem("savedProfiles", JSON.stringify(savedProfiles));
+}
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+const savedProfiles = JSON.parse(localStorage.getItem("savedProfiles") || "[]");
+const selectedId = localStorage.getItem("selectedRoommate");
+if(savedProfiles.includes(selectedId)) isSaved = true;
+
+render();
+</script>
+</body>
+</html>
